@@ -1,6 +1,6 @@
 #include <GL/glut.h>
 
-// ekhane global variable
+// Global variables
 float basketX = 300.0f;
 float basketY = 40.0f;
 int score = 0;
@@ -17,7 +17,17 @@ void drawBasket() {
 }
 
 void moveBasketKeyboard(int key, int x, int y) {
+    if (key == GLUT_KEY_LEFT) {
+        basketX -= 20.0f;
+    }
+    else if (key == GLUT_KEY_RIGHT) {
+        basketX += 20.0f;
+    }
 
+    if (basketX < 30) basketX = 30;
+    if (basketX > 770) basketX = 770;
+
+    glutPostRedisplay();
 }
 
 void moveBasketMouse(int x, int y) {
@@ -42,3 +52,22 @@ void display() {
     glFlush();
 }
 
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(800, 600);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Catch The Eggs");
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, 800, 0, 600);
+
+    glutDisplayFunc(display);
+    glutSpecialFunc(moveBasketKeyboard);
+
+    glutMainLoop();
+    return 0;
+}
