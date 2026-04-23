@@ -5,6 +5,8 @@
 float basketX = 300.0f;
 float basketY = 40.0f;
 int score = 0;
+float basketWidth = 60.0f;
+float basketHeight = 20.0f;
 
 // Function prototypes
 void drawBasket();
@@ -19,10 +21,10 @@ void drawBasket() {
     glColor3f(1.0f, 1.0f, 0.0f);
 
     glBegin(GL_POLYGON);
-        glVertex2f(basketX - 30, basketY);
-        glVertex2f(basketX + 30, basketY);
-        glVertex2f(basketX + 20, basketY + 20);
-        glVertex2f(basketX - 20, basketY + 20);
+        glVertex2f(basketX - basketWidth / 2, basketY);
+        glVertex2f(basketX + basketWidth / 2, basketY);
+        glVertex2f(basketX + basketWidth / 3, basketY + basketHeight);
+        glVertex2f(basketX - basketWidth / 3, basketY + basketHeight);
     glEnd();
 }
 
@@ -33,9 +35,9 @@ void moveBasketKeyboard(int key, int x, int y) {
     else if (key == GLUT_KEY_RIGHT) {
         basketX += 20.0f;
     }
-    
-    if (basketX < 30) basketX = 30;
-    if (basketX > 770) basketX = 770;
+
+    if (basketX < basketWidth / 2) basketX = basketWidth / 2;
+    if (basketX > 800 - basketWidth / 2) basketX = 800 - basketWidth / 2;
 
     glutPostRedisplay();
 }
@@ -43,16 +45,16 @@ void moveBasketKeyboard(int key, int x, int y) {
 void moveBasketMouse(int x, int y) {
     basketX = (float)x;
 
-    if (basketX < 30) basketX = 30;
-    if (basketX > 770) basketX = 770;
+    if (basketX < basketWidth / 2) basketX = basketWidth / 2;
+    if (basketX > 800 - basketWidth / 2) basketX = 800 - basketWidth / 2;
 
     glutPostRedisplay();
 }
 
 void checkCatch(float objectX, float objectY, int points) {
-    if (objectY <= basketY + 20 &&
-        objectX >= basketX - 30 &&
-        objectX <= basketX + 30) {
+    if (objectY <= basketY + basketHeight &&
+        objectX >= basketX - basketWidth / 2 &&
+        objectX <= basketX + basketWidth / 2) {
         updateScore(points);
     }
 }
