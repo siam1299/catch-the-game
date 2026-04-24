@@ -7,12 +7,15 @@ float basketY = 40.0f;
 int score = 0;
 float basketWidth = 60.0f;
 float basketHeight = 20.0f;
+float caughtObjectX = 0.0f;
+float caughtObjectY = 0.0f;
+int caughtObjectPoints = 0;
 
 // Function prototypes
 void drawBasket();
 void moveBasketKeyboard(int key, int x, int y);
 void moveBasketMouse(int x, int y);
-void checkCatch(float objectX, float objectY, int points);
+void checkCatch();
 void updateScore(int points);
 void drawScoreText();
 void display();
@@ -51,11 +54,11 @@ void moveBasketMouse(int x, int y) {
     glutPostRedisplay();
 }
 
-void checkCatch(float objectX, float objectY, int points) {
-    if (objectY <= basketY + basketHeight &&
-        objectX >= basketX - basketWidth / 2 &&
-        objectX <= basketX + basketWidth / 2) {
-        updateScore(points);
+void checkCatch() {
+    if (caughtObjectY <= basketY + basketHeight &&
+        caughtObjectX >= basketX - basketWidth / 2 &&
+        caughtObjectX <= basketX + basketWidth / 2) {
+        updateScore(caughtObjectPoints);
     }
 }
 
