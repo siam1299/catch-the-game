@@ -11,14 +11,32 @@ int windowHeight = 600;
 float chickenX = 400.0f;
 float chickenY = 520.0f;
 float chickenSpeed = 2.0f;
-int chickenDirection = 1;
+int chickenDirection = 1; // 1 =right , -1 = left
 
-// ---------------- One falling object ----------------
+// bamboo movement limit
+float chickenLeftLimit = 120.0f;
+float chickenRightLimit = 680.0f;
+
+// ----------------  falling object ----------------
 float objectX = 400.0f;
 float objectY = 480.0f;
 float fallSpeed = 2.0f;
+
+// 0 = normal egg
+// 1 = blue egg
+// 2 = golden egg
+// 3 = poop
+// 4 = perk
+
 int objectType = 0;
 bool objectActive = false;
+
+// if objectType == 4 , then perktype decides which perk
+// 0 = bigger basket
+// 1 = slow fall
+// 2 = extra time
+
+int perkType = 0;
 
 // ---------------- Timer ----------------
 int totalGameTime = 60;
@@ -30,6 +48,8 @@ bool slowFallActive = false;
 bool bigBasketPerkActive = false;
 int slowFallTimer = 0;
 int bigBasketTimer = 0;
+
+float basketWidth = 60.0f;
 
 // ---------------- Function declarations ----------------
 void drawChicken();
@@ -138,6 +158,74 @@ void drawChicken()
    glEnd();
 }
 
+void moveChicken()
+{
+   // stop movement if game is over or paused
+   if (gameRunning == false)
+   {
+      return;
+   }
+
+   // move chicken horizontally
+   chickenX = chickenX + chickenSpeed * chickenDirection;
+
+   // right boundary
+   if (chickenX >= chickenRightLimit)
+   {
+      chickenX = chickenRightLimit;
+      chickenDirection = -1;
+   }
+
+   // left boundary
+   if (chickenX <= chickenLeftLimit)
+   {
+      chickenX = chickenLeftLimit;
+      chickenDirection = 1;
+   }
+}
+
+void spawnObjects()
+{
+   // if one object is already falling , do nothing
+   if (objectActive == true)
+   {
+      return;
+   }
+
+   // start new object below chicken
+   objectX = chickenX;
+   objectY = chickenY - 25;
+
+   // random type
+   int r = rand() % 100;
+
+   if (r < 50)
+   {
+      objectType = 0; // normal egg
+   }
+
+   else if (r < 70)
+   {
+      objectType = 1; // blue egg
+   }
+
+   else if (r < 80)
+   {
+      objectType = 2; // golden egg
+   }
+   else if (r < 90)
+   {
+      objectType = 3; // poop
+   }
+
+   else
+   {
+      objectType = 4;        // perk
+      perkType = rand() % 3; // 0,1,2
+   }
+   objectActive = true;
+}
+
 //--------------Display---------------
 void display()
 {
@@ -158,7 +246,61 @@ void display()
    // time text
    drawTimeText(20, 560);
 
+   // temporary object drawing for test
+   if (objectActive == true)
+   {
+      // normal egg = white
+      if (objectType == 0)
+         glColor3f(1.0f, 1.0f, 1.0f);
+
+      // blue egg = blue
+      else if (objectType == 1)
+      {
+         glColor3f(0.2f, 0.4f, 1.0f);
+      }
+
+      // golden egg = yellow
+      else if (objectType == 2)
+      {
+         glColor3f(1.0f, 0.8f, 0.0f);
+      }
+
+      // poop = brown
+      else if (objectType == 3)
+      {
+         glColor3f(0.4f, 0.2f, 0.0f);
+      }
+
+      // perk =green
+      else
+      {
+         glColor3f(0.0f, 1.0f, 0.0f);
+      }
+
+      glBegin(GL_QUADS);
+      glVertex2f(objectX - 8, objectY);
+      glVertex2f(objectX + 8, objectY);
+      glVertex2f(objectX + 8, objectY + 16);
+      glVertex2f(objectX - 8, objectY + 16);
+      glEnd();
+   }
+
    glFlush();
+}
+
+void update(int value)
+{
+   // move chicken
+   moveChicken();
+
+   // try to create one object if none exists
+   spawnObjects();
+
+   // redraw the  screen
+   glutPostRedisplay();
+
+   // call update function again after 16 ms
+   glutTimerFunc(16, update, 0);
 }
 
 //------------Init-----------
@@ -177,10 +319,16 @@ int main(int argc, char **argv)
 {
    glutInit(&argc, argv);
    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+
    glutInitWindowSize(windowWidth, windowHeight);
+
    glutCreateWindow("Catch The Eggs - Test");
+
    init();
+
    glutDisplayFunc(display);
+
+   glutTimerFunc(16, update, 0);
 
    glutMainLoop();
    return 0;
