@@ -45,9 +45,9 @@ bool gameRunning = true;
 
 // ---------------- Perk states ----------------
 bool slowFallActive = false;
-bool bigBasketPerkActive = false;
-int slowFallTimer = 0;
-int bigBasketTimer = 0;
+bool bigBasketActive = false;
+int slowFallFrames = 0;
+int bigBasketFrames = 0;
 
 float basketWidth = 60.0f;
 
@@ -226,6 +226,61 @@ void spawnObjects()
    objectActive = true;
 }
 
+void updateFallingObjects()
+{
+   // if game stopped, do nothing
+   if (gameRunning == false)
+   {
+      return;
+   }
+
+   // if no object exists, create one
+   if (objectActive == false)
+   {
+      spawnObjects();
+      return;
+   }
+   // move object downward
+   objectY = objectY - fallSpeed;
+
+   // if object goes below screen, remove it
+   if (objectY < 0)
+   {
+      objectActive = false;
+   }
+}
+
+void applyPerk(int perkType)
+{
+   // bigger basket
+   if (perkType == 0)
+   {
+      basketWidth = 100.0f; // default 60
+      bigBasketActive = true;
+      bigBasketFrames = 600; // about 10 sec if update runs ~ 60 FPS
+   }
+
+   // slower fall speed
+   else if (perkType == 1)
+   {
+      fallSpeed = 1.0f;
+      slowFallActive = true;
+      slowFallFrames = 600;
+   }
+
+   // extra time
+   else if (perkType == 2)
+   {
+      timeLeft = timeLeft + 5;
+
+      // optional cap
+      if (timeLeft > totalGameTime + 20)
+      {
+         timeLeft = totalGameTime + 20;
+      }
+   }
+}
+
 //--------------Display---------------
 void display()
 {
@@ -271,11 +326,30 @@ void display()
          glColor3f(0.4f, 0.2f, 0.0f);
       }
 
-      // perk =green
-      else
+      // perk block
+      else if (objectType == 4)
       {
-         glColor3f(0.0f, 1.0f, 0.0f);
+         // bigger basket perk
+         if (perkType == 0)
+         {
+            glColor3f(0.0f, 1.0f, 0.0f);
+         }
+
+         // slow fall perk
+         else if (perkType == 1)
+         {
+            glColor3f(1.0f, 0.5f, 0.0f);
+         }
+
+         // extra time perk
+
+         else if (perkType == 2)
+         {
+            glColor3f(1.0f, 0.0f, 1.0f);
+         }
       }
+
+      // simple object shape
 
       glBegin(GL_QUADS);
       glVertex2f(objectX - 8, objectY);
@@ -293,9 +367,8 @@ void update(int value)
    // move chicken
    moveChicken();
 
-   // try to create one object if none exists
-   spawnObjects();
-
+   // handle spawning + falling
+   updateFallingObjects();
    // redraw the  screen
    glutPostRedisplay();
 
