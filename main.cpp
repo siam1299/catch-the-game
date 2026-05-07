@@ -281,6 +281,30 @@ void applyPerk(int perkType)
    }
 }
 
+void updateTimer(int value)
+{
+   // if game already stopped, do nothing
+   if (gameRunning == false)
+   {
+      return;
+   }
+
+   // reduce remaining time by 1 second
+   timeLeft--;
+
+   // stop game when time becomes 0
+   if (timeLeft <= 0)
+   {
+      timeLeft = 0;
+      gameRunning = false;
+      return;
+   }
+
+   // call this function again after 1 second
+
+   glutTimerFunc(1000, updateTimer, 0);
+}
+
 //--------------Display---------------
 void display()
 {
@@ -364,11 +388,38 @@ void display()
 
 void update(int value)
 {
-   // move chicken
+   // move chicken only if game is running
    moveChicken();
 
    // handle spawning + falling
    updateFallingObjects();
+
+   // if bigger basket perk is active, reduce it's remaining frames
+   if (bigBasketActive == true)
+   {
+      bigBasketFrames--;
+
+      // when perk time ends, return basket to normal size
+      if (bigBasketFrames <= 0)
+      {
+         bigBasketActive = false;
+         basketWidth = 60.0f;
+      }
+   }
+
+   // if slow fall perk is active , reduce its remaining frames
+
+   if (slowFallActive == true)
+   {
+      slowFallFrames--;
+
+      // when perk time ends, return fall speed to normal
+      if (slowFallFrames <= 0)
+      {
+         slowFallActive = false;
+         fallSpeed = 2.0f;
+      }
+   }
    // redraw the  screen
    glutPostRedisplay();
 
@@ -390,19 +441,30 @@ void init()
 
 int main(int argc, char **argv)
 {
+   // start glut
    glutInit(&argc, argv);
+
+   // set display mode
    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 
+   // set window size
    glutInitWindowSize(windowWidth, windowHeight);
 
+   // create window
    glutCreateWindow("Catch The Eggs - Test");
-
+   // OpenGL setup
    init();
 
+   // display callback
    glutDisplayFunc(display);
 
+   // frame update loop
    glutTimerFunc(16, update, 0);
 
+   // game timer loop
+   glutTimerFunc(1000, updateTimer, 0);
+
+   // keep programming running
    glutMainLoop();
    return 0;
 }
