@@ -282,17 +282,26 @@ void spawnObjects()
 
    int r = rand() % 100;
 
-   if (r < 60)
+   if (r < 50)
    {
-      objectType = 0; // white egg
+      objectType = 0; // normal egg
    }
-   else if (r < 85)
+   else if (r < 70)
+   {
+      objectType = 1; // blue egg
+   }
+   else if (r < 80)
    {
       objectType = 2; // golden egg
    }
-   else
+   else if (r < 90)
    {
       objectType = 3; // poop
+   }
+   else
+   {
+      objectType = 4;        // perk block
+      perkType = rand() % 3; // 0,1,2
    }
 
    objectActive = true;
@@ -319,15 +328,24 @@ void updateFallingObjects()
 
    if (objectType == 0)
       points = 1;
+   else if (objectType == 1)
+      points = 5;
    else if (objectType == 2)
       points = 10;
    else if (objectType == 3)
       points = -10;
+   else if (objectType == 4)
+      points = 0;
 
-setCaughtObjectData(objectX, objectY, points);
+   setCaughtObjectData(objectX, objectY, points);
 
    if (checkCatch())
    {
+      if (objectType == 4)
+      {
+         applyPerk(perkType);
+      }
+
       objectActive = false;
    }
 
@@ -419,10 +437,9 @@ void display()
 
    // chicken
    drawChicken();
-   
+
    // basket
    drawBasket();
-
 
    // time text
    drawTimeText(20, 560);
@@ -433,7 +450,11 @@ void display()
    {
       if (objectType == 0)
       {
-         glColor3f(1.0f, 1.0f, 1.0f); // white egg
+         glColor3f(1.0f, 1.0f, 1.0f); // normal egg
+      }
+      else if (objectType == 1)
+      {
+         glColor3f(0.2f, 0.4f, 1.0f); // blue egg
       }
       else if (objectType == 2)
       {
@@ -442,6 +463,15 @@ void display()
       else if (objectType == 3)
       {
          glColor3f(0.4f, 0.2f, 0.0f); // poop
+      }
+      else if (objectType == 4)
+      {
+         if (perkType == 0)
+            glColor3f(0.0f, 1.0f, 0.0f); // bigger basket
+         else if (perkType == 1)
+            glColor3f(1.0f, 0.5f, 0.0f); // slow fall
+         else if (perkType == 2)
+            glColor3f(1.0f, 0.0f, 1.0f); // extra time
       }
 
       // simple object shape
