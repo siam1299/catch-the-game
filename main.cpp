@@ -261,6 +261,10 @@ void handleKeyboard(unsigned char key, int x, int y)
          isPaused = !isPaused;
       }
    }
+   else if (key == 27)
+   {
+      exit(0);
+   }
 
    glutPostRedisplay();
 }
