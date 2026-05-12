@@ -42,6 +42,7 @@ int perkType = 0;
 int totalGameTime = 60;
 int timeLeft = 60;
 bool gameRunning = true;
+bool isPaused = false;
 
 // ---------------- Perk states ----------------
 bool slowFallActive = false;
@@ -83,6 +84,7 @@ void setCaughtObjectData(float x, float y, int points);
 bool checkCatch();
 void updateScore(int points);
 void drawScoreText();
+void handleKeyboard(unsigned char key, int x, int y);
 
 // ---------------- Helper: draw text ----------------
 
@@ -110,6 +112,12 @@ void drawTimeText(float x, float y)
 
 void updateTimer(int value)
 {
+   if (isPaused == true)
+   {
+      glutTimerFunc(1000, updateTimer, 0);
+      return;
+   }
+
    if (gameRunning == true && timeLeft > 0)
    {
       timeLeft--;
@@ -203,7 +211,7 @@ void drawBasket()
 
 void moveBasketKeyboard(int key, int x, int y)
 {
-   if (gameRunning == false)
+   if (gameRunning == false || isPaused == true)
    {
       return;
    }
@@ -228,7 +236,7 @@ void moveBasketKeyboard(int key, int x, int y)
 
 void moveBasketMouse(int x, int y)
 {
-   if (gameRunning == false)
+   if (gameRunning == false || isPaused == true)
    {
       return;
    }
@@ -240,6 +248,19 @@ void moveBasketMouse(int x, int y)
 
    if (basketX > windowWidth - basketWidth / 2)
       basketX = windowWidth - basketWidth / 2;
+
+   glutPostRedisplay();
+}
+
+void handleKeyboard(unsigned char key, int x, int y)
+{
+   if (key == 'p' || key == 'P')
+   {
+      if (gameRunning == true)
+      {
+         isPaused = !isPaused;
+      }
+   }
 
    glutPostRedisplay();
 }
@@ -489,6 +510,12 @@ void display()
 
 void update(int value)
 {
+   if (isPaused == true)
+   {
+      glutTimerFunc(16, update, 0);
+      return;
+   }
+
    // move chicken
    moveChicken();
 
@@ -525,6 +552,8 @@ int main(int argc, char **argv)
    init();
 
    glutDisplayFunc(display);
+
+   glutKeyboardFunc(handleKeyboard);
 
    glutSpecialFunc(moveBasketKeyboard);
 
