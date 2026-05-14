@@ -43,6 +43,7 @@ int totalGameTime = 60;
 int timeLeft = 60;
 bool gameRunning = true;
 bool isPaused = false;
+int currentPage = 0; // 0 = menu, 1 = game
 
 // ---------------- Perk states ----------------
 bool slowFallActive = false;
@@ -85,6 +86,7 @@ bool checkCatch();
 void updateScore(int points);
 void drawScoreText();
 void handleKeyboard(unsigned char key, int x, int y);
+void drawMenuPage();
 
 // ---------------- Helper: draw text ----------------
 
@@ -254,16 +256,30 @@ void moveBasketMouse(int x, int y)
 
 void handleKeyboard(unsigned char key, int x, int y)
 {
-   if (key == 'p' || key == 'P')
+   if (currentPage == 0)
    {
-      if (gameRunning == true)
+      if (key == 's' || key == 'S')
       {
-         isPaused = !isPaused;
+         currentPage = 1;
+      }
+      else if (key == 'e' || key == 'E')
+      {
+         exit(0);
       }
    }
-   else if (key == 27)
+   else
    {
-      exit(0);
+      if (key == 'p' || key == 'P')
+      {
+         if (gameRunning == true)
+         {
+            isPaused = !isPaused;
+         }
+      }
+      else if (key == 27)
+      {
+         exit(0);
+      }
    }
 
    glutPostRedisplay();
@@ -429,6 +445,15 @@ void setCaughtObjectData(float x, float y, int points)
    caughtObjectPoints = points;
 }
 
+void drawMenuPage()
+{
+   glColor3f(1.0f, 1.0f, 1.0f);
+
+   drawText(300, 420, "CATCH THE EGGS");
+   drawText(280, 340, "Press S to Start Game");
+   drawText(280, 300, "Press E to Exit");
+}
+
 bool checkCatch()
 {
    if (caughtObjectY <= basketY + basketHeight &&
@@ -450,6 +475,13 @@ void updateScore(int points)
 void display()
 {
    glClear(GL_COLOR_BUFFER_BIT);
+
+   if (currentPage == 0)
+   {
+      drawMenuPage();
+      glFlush();
+      return;
+   }
 
    // bamboo stick
    glColor3f(0.8f, 0.7f, 0.3f);
@@ -514,6 +546,12 @@ void display()
 
 void update(int value)
 {
+   if (currentPage == 0)
+   {
+      glutTimerFunc(16, update, 0);
+      return;
+   }
+
    if (isPaused == true)
    {
       glutTimerFunc(16, update, 0);
