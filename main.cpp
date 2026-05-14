@@ -87,6 +87,8 @@ void updateScore(int points);
 void drawScoreText();
 void handleKeyboard(unsigned char key, int x, int y);
 void drawMenuPage();
+void drawPausedText();
+void drawGameOverText();
 
 // ---------------- Helper: draw text ----------------
 
