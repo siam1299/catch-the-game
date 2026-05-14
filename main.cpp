@@ -2,6 +2,7 @@
 #include <GL/glut.h>
 #include <cstdio>
 #include <cstring>
+#include <math.h>
 
 // ---------------- Window ----------------
 int windowWidth = 800;
@@ -89,6 +90,10 @@ void handleKeyboard(unsigned char key, int x, int y);
 void drawMenuPage();
 void drawPausedText();
 void drawGameOverText();
+void drawFilledCircle(float cx, float cy, float r);
+void drawSingleCloud(float x, float y);
+void drawClouds();
+void drawField();
 
 // ---------------- Helper: draw text ----------------
 
@@ -456,6 +461,64 @@ void drawMenuPage()
    drawText(280, 300, "Press E to Exit");
 }
 
+void drawFilledCircle(float cx, float cy, float r)
+{
+   glBegin(GL_TRIANGLE_FAN);
+   glVertex2f(cx, cy);
+
+   for (int i = 0; i <= 100; i++)
+   {
+      float angle = 2.0f * 3.1416f * i / 100;
+      float x = r * cos(angle);
+      float y = r * sin(angle);
+      glVertex2f(cx + x, cy + y);
+   }
+   glEnd();
+}
+
+void drawSingleCloud(float x, float y)
+{
+   glColor3f(1.0f, 1.0f, 1.0f);
+
+   drawFilledCircle(x, y, 18);
+   drawFilledCircle(x + 20, y + 10, 20);
+   drawFilledCircle(x + 40, y, 18);
+   drawFilledCircle(x + 20, y - 5, 22);
+}
+
+void drawClouds()
+{
+   drawSingleCloud(140, 540);
+   drawSingleCloud(320, 500);
+   drawSingleCloud(520, 470);
+   drawSingleCloud(650, 530);
+}
+
+void drawField()
+{
+   glColor3f(0.2f, 0.7f, 0.2f);
+   glBegin(GL_QUADS);
+   glVertex2f(0, 0);
+   glVertex2f(windowWidth, 0);
+   glVertex2f(windowWidth, 80);
+   glVertex2f(0, 80);
+   glEnd();
+
+   glColor3f(0.1f, 0.6f, 0.1f);
+   glBegin(GL_POLYGON);
+   glVertex2f(0, 80);
+   glVertex2f(100, 70);
+   glVertex2f(220, 78);
+   glVertex2f(340, 72);
+   glVertex2f(460, 82);
+   glVertex2f(580, 74);
+   glVertex2f(700, 79);
+   glVertex2f(800, 72);
+   glVertex2f(800, 0);
+   glVertex2f(0, 0);
+   glEnd();
+}
+
 bool checkCatch()
 {
    if (caughtObjectY <= basketY + basketHeight &&
@@ -484,6 +547,9 @@ void display()
       glFlush();
       return;
    }
+
+   drawClouds();
+   drawField();
 
    // bamboo stick
    glColor3f(0.8f, 0.7f, 0.3f);
