@@ -94,6 +94,7 @@ void drawFilledCircle(float cx, float cy, float r);
 void drawSingleCloud(float x, float y);
 void drawClouds();
 void drawField();
+void drawBigText(float x, float y, float scale, const char* text);
 
 // ---------------- Helper: draw text ----------------
 
@@ -105,6 +106,20 @@ void drawText(float x, float y, const char *text)
    {
       glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
    }
+}
+
+void drawBigText(float x, float y, float scale, const char* text)
+{
+   glPushMatrix();
+   glTranslatef(x, y, 0.0f);
+   glScalef(scale, scale, 1.0f);
+
+   for (int i = 0; text[i] != '\0'; i++)
+   {
+      glutStrokeCharacter(GLUT_STROKE_ROMAN, text[i]);
+   }
+
+   glPopMatrix();
 }
 
 //--------------draw Time Text()------------------
@@ -454,11 +469,38 @@ void setCaughtObjectData(float x, float y, int points)
 
 void drawMenuPage()
 {
-   glColor3f(1.0f, 1.0f, 1.0f);
+   // menu box fill
+   glColor3f(0.25f, 0.45f, 0.75f);
+   glBegin(GL_QUADS);
+      glVertex2f(200, 180);
+      glVertex2f(600, 180);
+      glVertex2f(600, 430);
+      glVertex2f(200, 430);
+   glEnd();
 
-   drawText(300, 420, "CATCH THE EGGS");
-   drawText(280, 340, "Press S to Start Game");
-   drawText(280, 300, "Press E to Exit");
+   // menu box border 
+   glColor3f(1.0f, 1.0f, 1.0f);
+   glLineWidth(3.0f);
+   glBegin(GL_LINE_LOOP);
+      glVertex2f(200, 180);
+      glVertex2f(600, 180);
+      glVertex2f(600, 430);
+      glVertex2f(200, 430);
+   glEnd();
+
+   // menu texts
+// title shadow
+glColor3f(0.1f, 0.1f, 0.1f);
+drawBigText(295, 375, 0.18f, "CATCH THE EGGS");
+
+// title main
+glColor3f(1.0f, 0.85f, 0.2f);
+drawBigText(292, 378, 0.18f, "CATCH THE EGGS");
+
+// menu texts
+glColor3f(1.0f, 1.0f, 1.0f);
+drawText(295, 300, "Press S to Start Game");
+drawText(325, 250, "Press E to Exit");
 }
 
 void drawFilledCircle(float cx, float cy, float r)
