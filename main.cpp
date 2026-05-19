@@ -136,6 +136,12 @@ void drawTimeText(float x, float y)
 
 void updateTimer(int value)
 {
+   if (currentPage == 0)
+   {
+      glutTimerFunc(1000, updateTimer, 0);
+      return;
+   }
+
    if (isPaused == true)
    {
       glutTimerFunc(1000, updateTimer, 0);
