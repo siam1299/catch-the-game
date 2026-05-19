@@ -1,0 +1,720 @@
+#include <windows.h>
+#include <GL/glut.h>
+#include <cstdio>
+#include <cstring>
+#include <math.h>
+
+// ---------------- Window ----------------
+int windowWidth = 800;
+int windowHeight = 600;
+
+// ---------------- Chicken ----------------
+float chickenX = 400.0f;
+float chickenY = 520.0f;
+float chickenSpeed = 2.0f;
+int chickenDirection = 1; // 1 =right , -1 = left
+
+// bamboo movement limit
+float chickenLeftLimit = 120.0f;
+float chickenRightLimit = 680.0f;
+
+// ----------------  falling object ----------------
+float objectX = 400.0f;
+float objectY = 480.0f;
+float fallSpeed = 2.0f;
+
+// 0 = normal egg
+// 1 = blue egg
+// 2 = golden egg
+// 3 = poop
+// 4 = perk
+
+int objectType = 0;
+bool objectActive = false;
+
+// if objectType == 4 , then perktype decides which perk
+// 0 = bigger basket
+// 1 = slow fall
+// 2 = extra time
+
+int perkType = 0;
+
+// ---------------- Timer ----------------
+int totalGameTime = 60;
+int timeLeft = 60;
+bool gameRunning = true;
+bool isPaused = false;
+int currentPage = 0; // 0 = menu, 1 = game
+
+// ---------------- Perk states ----------------
+bool slowFallActive = false;
+bool bigBasketActive = false;
+int slowFallFrames = 0;
+int bigBasketFrames = 0;
+
+float basketWidth = 60.0f;
+float basketX = 300.0f;
+float basketY = 40.0f;
+int score = 0;
+float basketHeight = 20.0f;
+
+float caughtObjectX = 0.0f;
+float caughtObjectY = 0.0f;
+int caughtObjectPoints = 0;
+
+// ---------------- Function declarations ----------------
+void drawChicken();
+void moveChicken();
+
+void spawnObjects();
+void updateFallingObjects();
+
+void updateTimer(int value);
+void applyPerk(int perkType);
+
+void drawTimeText(float x, float y);
+void drawText(float x, float y, const char *text);
+
+void display();
+void update(int value);
+void init();
+
+void drawBasket();
+void moveBasketKeyboard(int key, int x, int y);
+void moveBasketMouse(int x, int y);
+void setCaughtObjectData(float x, float y, int points);
+bool checkCatch();
+void updateScore(int points);
+void drawScoreText();
+void handleKeyboard(unsigned char key, int x, int y);
+void drawMenuPage();
+void drawPausedText();
+void drawGameOverText();
+void drawFilledCircle(float cx, float cy, float r);
+void drawSingleCloud(float x, float y);
+void drawClouds();
+void drawField();
+void drawBigText(float x, float y, float scale, const char* text);
+
+// ---------------- Helper: draw text ----------------
+
+void drawText(float x, float y, const char *text)
+{
+   glRasterPos2f(x, y);
+
+   for (int i = 0; text[i] != '\0'; i++)
+   {
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
+   }
+}
+
+void drawBigText(float x, float y, float scale, const char* text)
+{
+   glPushMatrix();
+   glTranslatef(x, y, 0.0f);
+   glScalef(scale, scale, 1.0f);
+
+   for (int i = 0; text[i] != '\0'; i++)
+   {
+      glutStrokeCharacter(GLUT_STROKE_ROMAN, text[i]);
+   }
+
+   glPopMatrix();
+}
+
+//--------------draw Time Text()------------------
+
+void drawTimeText(float x, float y)
+{
+   char buffer[50];
+   sprintf(buffer, "Time : %d", timeLeft);
+
+   glColor3f(1.0f, 1.0f, 1.0f);
+
+   drawText(x, y, buffer);
+}
+
+void updateTimer(int value)
+{
+   if (isPaused == true)
+   {
+      glutTimerFunc(1000, updateTimer, 0);
+      return;
+   }
+
+   if (gameRunning == true && timeLeft > 0)
+   {
+      timeLeft--;
+   }
+   else if (timeLeft <= 0)
+   {
+      gameRunning = false;
+   }
+
+   glutPostRedisplay();
+   glutTimerFunc(1000, updateTimer, 0);
+}
+
+//-----------------Function Implement-----------
+
+void drawChicken()
+{
+   // body structure
+
+   glColor3f(0.85f, 0.45f, 0.15f);
+   glBegin(GL_POLYGON);
+   glVertex2f(chickenX - 25, chickenY);
+   glVertex2f(chickenX + 25, chickenY);
+   glVertex2f(chickenX + 20, chickenY + 25);
+   glVertex2f(chickenX - 20, chickenY + 25);
+   glEnd();
+
+   // head structure
+   glColor3f(0.95f, 0.75f, 0.45f);
+   glBegin(GL_POLYGON);
+   glVertex2f(chickenX + 15, chickenY + 22);
+   glVertex2f(chickenX + 35, chickenY + 22);
+   glVertex2f(chickenX + 35, chickenY + 42);
+   glVertex2f(chickenX + 15, chickenY + 42);
+   glEnd();
+
+   // beak
+   glColor3f(1.0f, 0.8f, 0.0f);
+   glBegin(GL_TRIANGLES);
+
+   glVertex2f(chickenX + 35, chickenY + 30);
+   glVertex2f(chickenX + 48, chickenY + 34);
+   glVertex2f(chickenX + 35, chickenY + 38);
+   glEnd();
+
+   // comb
+   glColor3f(1.0f, 0.0f, 0.0f);
+   glBegin(GL_TRIANGLES);
+
+   glVertex2f(chickenX + 18, chickenY + 42);
+   glVertex2f(chickenX + 24, chickenY + 52);
+   glVertex2f(chickenX + 30, chickenY + 42);
+   glEnd();
+
+   // tail structure
+
+   glColor3f(0.6f, 0.2f, 0.1f);
+   glBegin(GL_TRIANGLES);
+   glVertex2f(chickenX - 25, chickenY + 18);
+   glVertex2f(chickenX - 45, chickenY + 40);
+   glVertex2f(chickenX - 20, chickenY + 30);
+   glEnd();
+
+   // left leg
+
+   glColor3f(1.0f, 0.8f, 0.0f);
+   glBegin(GL_LINES);
+   glVertex2f(chickenX - 8, chickenY);
+   glVertex2f(chickenX - 8, chickenY - 15);
+   glEnd();
+
+   // right leg
+
+   glBegin(GL_LINES);
+   glVertex2f(chickenX + 8, chickenY);
+   glVertex2f(chickenX + 8, chickenY - 15);
+   glEnd();
+}
+
+void drawBasket()
+{
+   glColor3f(1.0f, 1.0f, 0.0f);
+
+   glBegin(GL_POLYGON);
+   glVertex2f(basketX - basketWidth / 2, basketY);
+   glVertex2f(basketX + basketWidth / 2, basketY);
+   glVertex2f(basketX + basketWidth / 3, basketY + basketHeight);
+   glVertex2f(basketX - basketWidth / 3, basketY + basketHeight);
+   glEnd();
+}
+
+void moveBasketKeyboard(int key, int x, int y)
+{
+   if (gameRunning == false || isPaused == true)
+   {
+      return;
+   }
+
+   if (key == GLUT_KEY_LEFT)
+   {
+      basketX -= 20.0f;
+   }
+   else if (key == GLUT_KEY_RIGHT)
+   {
+      basketX += 20.0f;
+   }
+
+   if (basketX < basketWidth / 2)
+      basketX = basketWidth / 2;
+
+   if (basketX > windowWidth - basketWidth / 2)
+      basketX = windowWidth - basketWidth / 2;
+
+   glutPostRedisplay();
+}
+
+void moveBasketMouse(int x, int y)
+{
+   if (gameRunning == false || isPaused == true)
+   {
+      return;
+   }
+
+   basketX = (float)x;
+
+   if (basketX < basketWidth / 2)
+      basketX = basketWidth / 2;
+
+   if (basketX > windowWidth - basketWidth / 2)
+      basketX = windowWidth - basketWidth / 2;
+
+   glutPostRedisplay();
+}
+
+void handleKeyboard(unsigned char key, int x, int y)
+{
+   if (currentPage == 0)
+   {
+      if (key == 's' || key == 'S')
+      {
+         currentPage = 1;
+      }
+      else if (key == 'e' || key == 'E')
+      {
+         exit(0);
+      }
+   }
+   else
+   {
+      if (key == 'p' || key == 'P')
+      {
+         if (gameRunning == true)
+         {
+            isPaused = !isPaused;
+         }
+      }
+      else if (key == 27)
+      {
+         exit(0);
+      }
+   }
+
+   glutPostRedisplay();
+}
+
+void moveChicken()
+{
+   // stop movement if game is over or paused
+   if (gameRunning == false)
+   {
+      return;
+   }
+
+   // move chicken horizontally
+   chickenX = chickenX + chickenSpeed * chickenDirection;
+
+   // right boundary
+   if (chickenX >= chickenRightLimit)
+   {
+      chickenX = chickenRightLimit;
+      chickenDirection = -1;
+   }
+
+   // left boundary
+   if (chickenX <= chickenLeftLimit)
+   {
+      chickenX = chickenLeftLimit;
+      chickenDirection = 1;
+   }
+}
+
+void spawnObjects()
+{
+   if (objectActive == true)
+   {
+      return;
+   }
+
+   objectX = chickenX;
+   objectY = chickenY - 25;
+
+   int r = rand() % 100;
+
+   if (r < 50)
+   {
+      objectType = 0; // normal egg
+   }
+   else if (r < 70)
+   {
+      objectType = 1; // blue egg
+   }
+   else if (r < 80)
+   {
+      objectType = 2; // golden egg
+   }
+   else if (r < 90)
+   {
+      objectType = 3; // poop
+   }
+   else
+   {
+      objectType = 4;        // perk block
+      perkType = rand() % 3; // 0,1,2
+   }
+
+   objectActive = true;
+}
+
+void updateFallingObjects()
+{
+   // if game stopped, do nothing
+   if (gameRunning == false)
+   {
+      return;
+   }
+
+   // if no object exists, create one
+   if (objectActive == false)
+   {
+      spawnObjects();
+      return;
+   }
+   // move object downward
+   objectY = objectY - fallSpeed;
+
+   int points = 0;
+
+   if (objectType == 0)
+      points = 1;
+   else if (objectType == 1)
+      points = 5;
+   else if (objectType == 2)
+      points = 10;
+   else if (objectType == 3)
+      points = -10;
+   else if (objectType == 4)
+      points = 0;
+
+   setCaughtObjectData(objectX, objectY, points);
+
+   if (checkCatch())
+   {
+      if (objectType == 4)
+      {
+         applyPerk(perkType);
+      }
+
+      objectActive = false;
+   }
+
+   // if object goes below screen, remove it
+   if (objectY < 0)
+   {
+      objectActive = false;
+   }
+}
+
+void applyPerk(int perkType)
+{
+   // bigger basket
+   if (perkType == 0)
+   {
+      basketWidth = 100.0f; // default 60
+      bigBasketActive = true;
+      bigBasketFrames = 600; // about 10 sec if update runs ~ 60 FPS
+   }
+
+   // slower fall speed
+   else if (perkType == 1)
+   {
+      fallSpeed = 1.0f;
+      slowFallActive = true;
+      slowFallFrames = 600;
+   }
+
+   // extra time
+   else if (perkType == 2)
+   {
+      timeLeft = timeLeft + 5;
+
+      // optional cap
+      if (timeLeft > totalGameTime + 20)
+      {
+         timeLeft = totalGameTime + 20;
+      }
+   }
+}
+
+void drawScoreText()
+{
+   char buffer[50];
+   sprintf(buffer, "Score : %d", score);
+
+   glColor3f(1.0f, 1.0f, 1.0f);
+
+   drawText(20, 530, buffer);
+}
+
+void setCaughtObjectData(float x, float y, int points)
+{
+   caughtObjectX = x;
+   caughtObjectY = y;
+   caughtObjectPoints = points;
+}
+
+void drawMenuPage()
+{
+   // menu box fill
+   glColor3f(0.25f, 0.45f, 0.75f);
+   glBegin(GL_QUADS);
+      glVertex2f(200, 180);
+      glVertex2f(600, 180);
+      glVertex2f(600, 430);
+      glVertex2f(200, 430);
+   glEnd();
+
+   // menu box border 
+   glColor3f(1.0f, 1.0f, 1.0f);
+   glLineWidth(3.0f);
+   glBegin(GL_LINE_LOOP);
+      glVertex2f(200, 180);
+      glVertex2f(600, 180);
+      glVertex2f(600, 430);
+      glVertex2f(200, 430);
+   glEnd();
+
+   // menu texts
+// title shadow
+glColor3f(0.1f, 0.1f, 0.1f);
+drawBigText(295, 375, 0.18f, "CATCH THE EGGS");
+
+// title main
+glColor3f(1.0f, 0.85f, 0.2f);
+drawBigText(292, 378, 0.18f, "CATCH THE EGGS");
+
+// menu texts
+glColor3f(1.0f, 1.0f, 1.0f);
+drawText(295, 300, "Press S to Start Game");
+drawText(325, 250, "Press E to Exit");
+}
+
+void drawFilledCircle(float cx, float cy, float r)
+{
+   glBegin(GL_TRIANGLE_FAN);
+   glVertex2f(cx, cy);
+
+   for (int i = 0; i <= 100; i++)
+   {
+      float angle = 2.0f * 3.1416f * i / 100;
+      float x = r * cos(angle);
+      float y = r * sin(angle);
+      glVertex2f(cx + x, cy + y);
+   }
+   glEnd();
+}
+
+void drawSingleCloud(float x, float y)
+{
+   glColor3f(1.0f, 1.0f, 1.0f);
+
+   drawFilledCircle(x, y, 18);
+   drawFilledCircle(x + 20, y + 10, 20);
+   drawFilledCircle(x + 40, y, 18);
+   drawFilledCircle(x + 20, y - 5, 22);
+}
+
+void drawClouds()
+{
+   drawSingleCloud(140, 540);
+   drawSingleCloud(320, 500);
+   drawSingleCloud(520, 470);
+   drawSingleCloud(650, 530);
+}
+
+void drawField()
+{
+   glColor3f(0.2f, 0.7f, 0.2f);
+   glBegin(GL_QUADS);
+   glVertex2f(0, 0);
+   glVertex2f(windowWidth, 0);
+   glVertex2f(windowWidth, 80);
+   glVertex2f(0, 80);
+   glEnd();
+
+   glColor3f(0.1f, 0.6f, 0.1f);
+   glBegin(GL_POLYGON);
+   glVertex2f(0, 80);
+   glVertex2f(100, 70);
+   glVertex2f(220, 78);
+   glVertex2f(340, 72);
+   glVertex2f(460, 82);
+   glVertex2f(580, 74);
+   glVertex2f(700, 79);
+   glVertex2f(800, 72);
+   glVertex2f(800, 0);
+   glVertex2f(0, 0);
+   glEnd();
+}
+
+bool checkCatch()
+{
+   if (caughtObjectY <= basketY + basketHeight &&
+       caughtObjectX >= basketX - basketWidth / 2 &&
+       caughtObjectX <= basketX + basketWidth / 2)
+   {
+      updateScore(caughtObjectPoints);
+      return true;
+   }
+   return false;
+}
+
+void updateScore(int points)
+{
+   score += points;
+}
+
+//--------------Display---------------
+void display()
+{
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   if (currentPage == 0)
+   {
+      drawMenuPage();
+      glFlush();
+      return;
+   }
+
+   drawClouds();
+   drawField();
+
+   // bamboo stick
+   glColor3f(0.8f, 0.7f, 0.3f);
+   glBegin(GL_QUADS);
+   glVertex2f(80, 500);
+   glVertex2f(720, 500);
+   glVertex2f(720, 510);
+   glVertex2f(80, 510);
+   glEnd();
+
+   // chicken
+   drawChicken();
+
+   // basket
+   drawBasket();
+
+   // time text
+   drawTimeText(20, 560);
+   drawScoreText();
+
+   // temporary object drawing for test
+   if (objectActive == true)
+   {
+      if (objectType == 0)
+      {
+         glColor3f(1.0f, 1.0f, 1.0f); // normal egg
+      }
+      else if (objectType == 1)
+      {
+         glColor3f(0.2f, 0.4f, 1.0f); // blue egg
+      }
+      else if (objectType == 2)
+      {
+         glColor3f(1.0f, 0.8f, 0.0f); // golden egg
+      }
+      else if (objectType == 3)
+      {
+         glColor3f(0.4f, 0.2f, 0.0f); // poop
+      }
+      else if (objectType == 4)
+      {
+         if (perkType == 0)
+            glColor3f(0.0f, 1.0f, 0.0f); // bigger basket
+         else if (perkType == 1)
+            glColor3f(1.0f, 0.5f, 0.0f); // slow fall
+         else if (perkType == 2)
+            glColor3f(1.0f, 0.0f, 1.0f); // extra time
+      }
+
+      // simple object shape
+
+      glBegin(GL_QUADS);
+      glVertex2f(objectX - 8, objectY);
+      glVertex2f(objectX + 8, objectY);
+      glVertex2f(objectX + 8, objectY + 16);
+      glVertex2f(objectX - 8, objectY + 16);
+      glEnd();
+   }
+
+   glFlush();
+}
+
+void update(int value)
+{
+   if (currentPage == 0)
+   {
+      glutTimerFunc(16, update, 0);
+      return;
+   }
+
+   if (isPaused == true)
+   {
+      glutTimerFunc(16, update, 0);
+      return;
+   }
+
+   // move chicken
+   moveChicken();
+
+   // handle spawning + falling
+   updateFallingObjects();
+   // redraw the  screen
+   glutPostRedisplay();
+
+   // call update function again after 16 ms
+   glutTimerFunc(16, update, 0);
+}
+
+//------------Init-----------
+void init()
+{
+   glClearColor(0.4f, 0.8f, 1.0f, 1.0f);
+
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+   gluOrtho2D(0, windowWidth, 0, windowHeight);
+}
+
+//-----------------Main------------------
+
+int main(int argc, char **argv)
+{
+   glutInit(&argc, argv);
+   glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+
+   glutInitWindowSize(windowWidth, windowHeight);
+
+   glutCreateWindow("Catch The Eggs - Test");
+
+   init();
+
+   glutDisplayFunc(display);
+
+   glutKeyboardFunc(handleKeyboard);
+
+   glutSpecialFunc(moveBasketKeyboard);
+
+   glutPassiveMotionFunc(moveBasketMouse);
+
+   glutTimerFunc(16, update, 0);
+
+   glutTimerFunc(1000, updateTimer, 0);
+
+   glutMainLoop();
+   return 0;
+}
